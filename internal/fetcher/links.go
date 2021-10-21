@@ -16,7 +16,7 @@ func fetchLinks() ([]string, error) {
 	rt := []string{}
 
 	for _, rawurl := range configs.Data.MS["appledaily"].URL {
-		links, err := getLinksRss(rawurl)
+		links, err := getLinks(rawurl)
 		if err != nil {
 			return nil, err
 		}
@@ -66,6 +66,7 @@ func getLinks(rawurl string) ([]string, error) {
 		return nil, errors.WithMessagef(err, "[%s] cannot extract links from %s",
 			configs.Data.MS["appledaily"].Title, rawurl)
 	} else {
+		links = linksFilter(links, `https://tw.appledaily.com/\w+/\d+/.*`)
 		return gears.StrSliceDeDupl(links), nil
 	}
 }

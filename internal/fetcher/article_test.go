@@ -14,8 +14,8 @@ func TestFetchTitle(t *testing.T) {
 		url   string
 		title string
 	}{
-		{"https://cn.appledaily.com/china/20211011/china-child-custody-abductions/?utm_source=RSS", "监护权争夺战：那些绑架自己孩子的中国家长"},
-		{"https://cn.appledaily.com/asia-pacific/20201201/north-korea-pandemic-china/", "疫情进一步冲击对华贸易，朝鲜经济困境加深"},
+		{"https://tw.appledaily.com/local/20211015/EJNCNTZMQVE5TE2PHRHB5MN3HY/", "K律師論點｜城中城大火若是人禍　究責關鍵先釐清這事"},
+		{"https://tw.appledaily.com/politics/20211012/GTRJUAUOXBAUXIIQZEAR72XHSI/", "網傳綠營大老舔共文　讚「兩岸只有親情和恩情」？當事人說話了"},
 	}
 	for _, tc := range tests {
 		a := NewArticle()
@@ -50,8 +50,8 @@ func TestFetchUpdateTime(t *testing.T) {
 		url  string
 		want string
 	}{
-		{"https://cn.appledaily.com/china/20211011/china-child-custody-abductions/?utm_source=RSS", "2021-10-11 17:41:03 +0800 UTC"},
-		{"https://cn.appledaily.com/asia-pacific/20201201/north-korea-pandemic-china/", "2020-12-01 19:04:20 +0800 UTC"},
+		{"https://tw.appledaily.com/local/20211015/EJNCNTZMQVE5TE2PHRHB5MN3HY/", "2021-10-15 16:13:47.476 +0800 UTC"},
+		{"https://tw.appledaily.com/politics/20211012/GTRJUAUOXBAUXIIQZEAR72XHSI/", "2021-10-12 20:36:20.657 +0800 UTC"},
 	}
 	var err error
 	for _, tc := range tests {
@@ -84,8 +84,9 @@ func TestFetchContent(t *testing.T) {
 		url  string
 		want string
 	}{
-		{"https://cn.appledaily.com/china/20211011/china-child-custody-abductions/?utm_source=RSS", "监护权争夺战：那些绑架自己孩子的中国家长"},
-		// {"https://cn.appledaily.com/asia-pacific/20201201/north-korea-pandemic-china/", "疫情进一步冲击对华贸易，朝鲜经济困境加深"},
+		{"https://tw.appledaily.com/property/20211021/2ICEHGCCWRFNXOLYWGGHGEIJDA/", "K律師論點｜城中城大火若是人禍　究責關鍵先釐清這事"},
+		{"https://tw.appledaily.com/local/20211015/EJNCNTZMQVE5TE2PHRHB5MN3HY/", "K律師論點｜城中城大火若是人禍　究責關鍵先釐清這事"},
+		{"https://tw.appledaily.com/politics/20211012/GTRJUAUOXBAUXIIQZEAR72XHSI/", "網傳綠營大老舔共文　讚「兩岸只有親情和恩情」？當事人說話了"},
 	}
 	var err error
 
@@ -113,8 +114,8 @@ func TestFetchArticle(t *testing.T) {
 		url string
 		err error
 	}{
-		{"https://cn.appledaily.com/china/20211011/china-child-custody-abductions/?utm_source=RSS", ErrTimeOverDays},
-		{"https://cn.appledaily.com/asia-pacific/20201201/north-korea-pandemic-china/", nil},
+		{"https://tw.appledaily.com/local/20211015/EJNCNTZMQVE5TE2PHRHB5MN3HY/", ErrTimeOverDays},
+		{"https://tw.appledaily.com/property/20211021/2ICEHGCCWRFNXOLYWGGHGEIJDA/", nil},
 	}
 	for _, tc := range tests {
 		a := NewArticle()

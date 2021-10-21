@@ -1,8 +1,8 @@
 package fetcher
 
 import (
-	"bytes"
 	"crypto/md5"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/url"
@@ -159,12 +159,12 @@ func (a *Article) fetchArticle(rawurl string) (*Article, error) {
 
 func (a *Article) fetchTitle() (string, error) {
 	n := exhtml.ElementsByTag(a.doc, "title")
-	if n == nil {
+	if n == nil || len(n) == 0 {
 		return "", fmt.Errorf("[%s] getTitle error, there is no element <title>",
 			configs.Data.MS["appledaily"].Title)
 	}
 	title := n[0].FirstChild.Data
-	rp := strings.NewReplacer(" - 纽约时报中文网", "")
+	rp := strings.NewReplacer(" ｜ 蘋果新聞網 ｜ 蘋果日報", "")
 	title = strings.TrimSpace(rp.Replace(title))
 	return gears.ChangeIllegalChar(title), nil
 }
@@ -177,7 +177,7 @@ func (a *Article) fetchUpdateTime() (*timestamppb.Timestamp, error) {
 
 	t := time.Now() // if no time fetched, return current time
 	var err error
-	n := exhtml.MetasByName(a.doc, "date")
+	n := exhtml.MetasByProperty(a.doc, "article:published_time")
 	if len(n) == 0 {
 		return nil, fmt.Errorf("[%s] fetchUpdateTime error, no meta named date matched: %s",
 			configs.Data.MS["appledaily"].Title, a.U.String())
@@ -210,35 +210,42 @@ func (a *Article) fetchContent() (string, error) {
 		return "", errors.Errorf("[%s] fetchContent: doc is nil: %s", configs.Data.MS["appledaily"].Title, a.U.String())
 	}
 	body := ""
-	bodyN := exhtml.ElementsByTagAndClass(a.doc, "section", "article-body")
+	bodyN := exhtml.ElementsByTagAndId(a.doc, "script", "fusion-metadata")
 	if len(bodyN) == 0 {
 		return body, errors.Errorf("no article content matched: %s", a.U.String())
 	}
 	// Fetch content
-	ps := exhtml.ElementsByTagAndClass(bodyN[0], "div", "article-paragraph")
-	for _, v := range ps {
-		var buf bytes.Buffer
-		if v.FirstChild == nil {
-			continue
+	bodyJs := func() string {
+		for _, v := range bodyN {
+			if v.FirstChild != nil && v.FirstChild.Type == html.TextNode {
+				return v.FirstChild.Data
+			}
 		}
-		// skip figure paragraph
-		if v.FirstChild.Type == html.ElementNode && v.FirstChild.Data == "figure" {
-			continue
-		}
-		if err := html.Render(&buf, v); err != nil {
-			err = fmt.Errorf("render node to bytes error: %s", a.U.String())
-			continue
-		}
-		re := regexp.MustCompile(`(?m)<div.*?>(?P<paragraph>.*?)</div>`)
-		x := re.ReplaceAllString(buf.String(), "${paragraph}  \n")
+		return ""
+	}()
 
-		re = regexp.MustCompile(`(?m)<span>(?P<span>.*?)</span>`)
-		x = re.ReplaceAllString(x, "${span}")
+	re := regexp.MustCompile(`(?m)Fusion\.globalContent=(?P<x>.*?);Fusion.globalContentConfig={"source":"`)
+	if !re.MatchString(bodyJs) {
+		return "", fmt.Errorf("nil content matched: %s", a.U.String())
+	}
+	rs := re.FindStringSubmatch(bodyJs)
+	c := struct {
+		Content_elements []struct {
+			Content string `json:"content"`
+		} `json:"content_elements"`
+	}{}
+	if err := json.Unmarshal([]byte(rs[1]), &c); err != nil {
+		return "", err
+	}
 
-		re = regexp.MustCompile(`(?m)<a.*?href="(?P<href>.*)".*?>(?P<title>.*?)</a>`)
-		x = re.ReplaceAllString(x, "[${title}](${href})")
-
-		body += x
+	for _, v := range c.Content_elements {
+		re := regexp.MustCompile(`(?m)<mark .*?>(?P<x>.*?)</mark>`)
+		x := re.ReplaceAllString(v.Content, "${x}")
+		re = regexp.MustCompile(`(?m)<b>(?P<x>.*?)</b>`)
+		x = re.ReplaceAllString(x, "**${x}**")
+		re = regexp.MustCompile(`(?m)<a href="(?P<href>.*?)">(?P<x>.*?)</a>`)
+		x = re.ReplaceAllString(x, "[${x}](${href})")
+		body += x + "  \n"
 	}
 	return body, nil
 }
