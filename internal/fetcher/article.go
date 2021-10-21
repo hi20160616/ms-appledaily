@@ -13,6 +13,7 @@ import (
 	"github.com/hi20160616/exhtml"
 	"github.com/hi20160616/gears"
 	"github.com/hi20160616/ms-appledaily/configs"
+	"github.com/hycka/gocc"
 	"github.com/pkg/errors"
 	"golang.org/x/net/html"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -110,6 +111,17 @@ var timeout = func() time.Duration {
 
 // fetchArticle fetch article by rawurl
 func (a *Article) fetchArticle(rawurl string) (*Article, error) {
+	translate := func(x string, err error) (string, error) {
+		if err != nil {
+			return "", err
+		}
+		tw2s, err := gocc.New("tw2s")
+		if err != nil {
+			return "", err
+		}
+		return tw2s.Convert(x)
+	}
+
 	var err error
 	a.U, err = url.Parse(rawurl)
 	if err != nil {
@@ -149,7 +161,7 @@ func (a *Article) fetchArticle(rawurl string) (*Article, error) {
 		return nil, err
 	}
 
-	a.Content, err = a.fmtContent(a.Content)
+	a.Content, err = translate(a.fmtContent(a.Content))
 	if err != nil {
 		return nil, err
 	}
@@ -245,6 +257,8 @@ func (a *Article) fetchContent() (string, error) {
 		x = re.ReplaceAllString(x, "**${x}**")
 		re = regexp.MustCompile(`(?m)<a href="(?P<href>.*?)">(?P<x>.*?)</a>`)
 		x = re.ReplaceAllString(x, "[${x}](${href})")
+		x = strings.ReplaceAll(x, "「", "“")
+		x = strings.ReplaceAll(x, "」", "”")
 		body += x + "  \n"
 	}
 	return body, nil
