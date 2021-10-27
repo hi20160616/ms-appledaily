@@ -50,10 +50,15 @@ func fetch(ctx context.Context) (as []*Article, err error) {
 			a := NewArticle()
 			a, err = a.fetchArticle(link)
 			if err != nil {
-				if !errors.Is(err, ErrTimeOverDays) {
-					log.Printf("[%s] fetch error: %v, link: %s",
+				if errors.Is(err, ErrTimeOverDays) ||
+					errors.Is(err, context.DeadlineExceeded) {
+					log.Printf("[%s] predictability error: %v, link: %s",
+						configs.Data.MS["appledaily"].Title, err, link)
+				} else {
+					log.Printf("[%s] fetch unexpected error: %v, link: %s",
 						configs.Data.MS["appledaily"].Title, err, link)
 				}
+				// TODO: PAINC: eat err here
 				err = nil
 				continue
 			}

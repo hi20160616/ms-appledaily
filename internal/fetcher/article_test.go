@@ -87,6 +87,7 @@ func TestFetchContent(t *testing.T) {
 		{"https://tw.appledaily.com/property/20211021/2ICEHGCCWRFNXOLYWGGHGEIJDA/", "K律師論點｜城中城大火若是人禍　究責關鍵先釐清這事"},
 		{"https://tw.appledaily.com/local/20211015/EJNCNTZMQVE5TE2PHRHB5MN3HY/", "K律師論點｜城中城大火若是人禍　究責關鍵先釐清這事"},
 		{"https://tw.appledaily.com/politics/20211012/GTRJUAUOXBAUXIIQZEAR72XHSI/", "網傳綠營大老舔共文　讚「兩岸只有親情和恩情」？當事人說話了"},
+		{"https://tw.appledaily.com/property/20211025/SARWV3SGOZALZJVUMBLTSM6EYI/", ""},
 	}
 	var err error
 
@@ -115,7 +116,8 @@ func TestFetchArticle(t *testing.T) {
 		err error
 	}{
 		{"https://tw.appledaily.com/local/20211015/EJNCNTZMQVE5TE2PHRHB5MN3HY/", ErrTimeOverDays},
-		{"https://tw.appledaily.com/property/20211021/2ICEHGCCWRFNXOLYWGGHGEIJDA/", nil},
+		{"https://tw.appledaily.com/property/20211021/2ICEHGCCWRFNXOLYWGGHGEIJDA/", ErrTimeOverDays},
+		{"https://tw.appledaily.com/property/20211025/SARWV3SGOZALZJVUMBLTSM6EYI/", nil},
 	}
 	for _, tc := range tests {
 		a := NewArticle()

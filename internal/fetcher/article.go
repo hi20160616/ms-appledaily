@@ -1,6 +1,7 @@
 package fetcher
 
 import (
+	"context"
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
@@ -30,6 +31,7 @@ type Article struct {
 	U             *url.URL
 	raw           []byte
 	doc           *html.Node
+	requestTimes  int
 }
 
 var ErrTimeOverDays error = errors.New("article update time out of range")
@@ -103,11 +105,43 @@ func (u ByUpdateTime) Less(i, j int) bool {
 var timeout = func() time.Duration {
 	t, err := time.ParseDuration(configs.Data.MS["appledaily"].Timeout)
 	if err != nil {
-		log.Printf("[%s] timeout init error: %v", configs.Data.MS["appledaily"].Title, err)
+		log.Printf("[%s] timeout init error: %v",
+			configs.Data.MS["appledaily"].Title, err)
 		return time.Duration(1 * time.Minute)
 	}
 	return t
 }()
+
+func (a *Article) dail(u string) (*Article, error) {
+	var err error
+	a.U, err = url.Parse(u)
+	if err != nil {
+		return nil, err
+	}
+	a.raw, a.doc, err = exhtml.GetRawAndDoc(a.U, 1*time.Minute)
+	if err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			return nil, errors.WithMessagef(err,
+				"404 on url: %s", u)
+			// if a.requestTimes == 5 {
+			// }
+			// a.requestTimes++
+			// return a.dail(u)
+		}
+		if strings.Contains(err.Error(), "invalid header") {
+			a.Title = a.U.Path
+			a.UpdateTime = timestamppb.Now()
+			a.Content, err = a.fmtContent("")
+			if err != nil {
+				return nil, err
+			}
+			return a, nil
+		} else {
+			return nil, err
+		}
+	}
+	return a, err
+}
 
 // fetchArticle fetch article by rawurl
 func (a *Article) fetchArticle(rawurl string) (*Article, error) {
@@ -123,24 +157,9 @@ func (a *Article) fetchArticle(rawurl string) (*Article, error) {
 	}
 
 	var err error
-	a.U, err = url.Parse(rawurl)
+	a, err = a.dail(rawurl)
 	if err != nil {
 		return nil, err
-	}
-	// Dail
-	a.raw, a.doc, err = exhtml.GetRawAndDoc(a.U, 1*time.Minute)
-	if err != nil {
-		if strings.Contains(err.Error(), "invalid header") {
-			a.Title = a.U.Path
-			a.UpdateTime = timestamppb.Now()
-			a.Content, err = a.fmtContent("")
-			if err != nil {
-				return nil, err
-			}
-			return a, nil
-		} else {
-			return nil, err
-		}
 	}
 
 	a.Id = fmt.Sprintf("%x", md5.Sum([]byte(rawurl)))
